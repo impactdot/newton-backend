@@ -1,4 +1,5 @@
 Flask==2.2.5  # Adjust version as needed based on your compatibility
 Werkzeug==2.2.5  # Version matching Flask's dependency
-MistralAI==<appropriate_version>  # Replace with the correct version for the Mistral package
+Tonutils-python==0.1.0  # Replace with the correct version for the Tonutils package
 PyPDF2==3.0.1  # Common version, adjust if needed
+Asyncio

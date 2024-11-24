@@ -17,12 +17,15 @@ from tonutils.wallet import (
     # PreprocessedWalletV2,
     # PreprocessedWalletV2R1,
 )
+from flask import Flask, request, jsonify
 
 # API key for accessing the Tonapi (obtainable from https://tonconsole.com)
-API_KEY = "AEXUUXDMF6AZYIIAAAAMJIJXGS7L4QVNYMFNVRXE7K2ZMH4ZEONFROWDBRMT6NK5IH5OTZY"  # Add your API key here.
+API_KEY = os.environ.get('TON_API_KEY', 'default_key')
 
 # Set to True for test network, False for main network
 IS_TESTNET = True
+
+app = Flask(__name__)
 
 async def send(private_key: str, send_to: str, amount: float):
     """
@@ -125,21 +128,41 @@ def create_wallet(wallet_id: str):
         conn.close()
 
 
-def main():
-    """
-    Main function to orchestrate the database creation and wallet creation.
-    """
+@app.route('/create-wallet', methods=['POST'])
+def create_wallet_endpoint():
     try:
-        # Step 1: Create the database
-        create_db()
-
-        # Step 2: Create wallet
-        wallet_id = input("Enter a unique wallet ID: ")
+        data = request.get_json()
+        wallet_id = data.get('wallet_id')
+        if not wallet_id:
+            return jsonify({'error': 'wallet_id is required'}), 400
+            
         create_wallet(wallet_id)
-
+        return jsonify({'message': f'Wallet created successfully with ID: {wallet_id}'}), 200
     except Exception as e:
-        print(f"An error occurred: {e}")
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/send', methods=['POST'])
+async def send_endpoint():
+    try:
+        data = request.get_json()
+        private_key = data.get('private_key')
+        send_to = data.get('send_to')
+        amount = data.get('amount')
+        
+        if not all([private_key, send_to, amount]):
+            return jsonify({'error': 'private_key, send_to, and amount are required'}), 400
+            
+        await send(private_key, send_to, float(amount))
+        return jsonify({'message': 'Transfer successful'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
-    main()
+    # Create the database on startup
+    create_db()
+    
+    # Get port from environment variable (Cloud Run sets this automatically)
+    port = int(os.environ.get('PORT', 8080))
+    
+    # Run the Flask app
+    app.run(host='0.0.0.0', port=port)
