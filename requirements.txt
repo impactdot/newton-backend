@@ -1,0 +1,4 @@
+Flask==2.2.5  # Adjust version as needed based on your compatibility
+Werkzeug==2.2.5  # Version matching Flask's dependency
+MistralAI==<appropriate_version>  # Replace with the correct version for the Mistral package
+PyPDF2==3.0.1  # Common version, adjust if needed
