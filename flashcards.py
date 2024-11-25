@@ -69,10 +69,34 @@ def generate_flashcards(topic, number):
         print(f"Unexpected API response structure: {e}")
         print("Full response:", chat_response)
         return data
+    
+
+        # Make the API call for validation
+    try:
+        chat_response = client.chat.complete(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": "INSANELY IMPORTANT: Do not include any markdown or code block formatting in your response and double check that you are outputting a JSON ONLY as it will get parsed into a JSON file: \n" + response_content,
+                },
+            ],
+        )
+    except Exception as e:
+        print(f"API call failed: {e}")
+        return data
+
+    # Extract the response content
+    try:
+        validated_response_content = chat_response.choices[0].message.content.strip()
+    except (AttributeError, IndexError) as e:
+        print(f"Unexpected API response structure: {e}")
+        print("Full response:", chat_response)
+        return data
 
     # Attempt to parse the response as JSON
     try:
-        flashcard_data = json.loads(response_content)
+        flashcard_data = json.loads(validated_response_content)
 
         if isinstance(flashcard_data, dict):
             theory = flashcard_data.get("theory")
@@ -254,10 +278,35 @@ def evaluate_answers():
             print(f"Unexpected API response structure: {e}")
             print("Full response:", chat_response)
             return jsonify({"error": "Unexpected API response structure."}), 500
+        
+        # Make the API call for validation
+
+        try:
+            chat_response = client.chat.complete(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
+                ],
+            )
+        except Exception as e:
+            print(f"API call failed: {e}")
+            return jsonify({"error": "Failed to get response from Mistral API."}), 500
+
+        # Extract the response content
+        try:
+            valid_response_content = chat_response.choices[0].message.content.strip()
+        except (AttributeError, IndexError) as e:
+            print(f"Unexpected API response structure: {e}")
+            print("Full response:", chat_response)
+            return jsonify({"error": "Unexpected API response structure."}), 500
+
 
         # Parse the response as JSON
         try:
-            evaluation = json.loads(response_content)
+            evaluation = json.loads(valid_response_content)
         except json.JSONDecodeError:
             print("Error: Failed to parse the response as JSON.")
             print("Response content:", response_content)
